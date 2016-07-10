@@ -1,3 +1,4 @@
+from datetime import datetime
 import math
 import copy
 import random
@@ -9,19 +10,19 @@ class Game(object):
         self.gameBorad = borad
 
     def run(self):
-        self.gameBorad.startGame()
+        self.gamePlayer.init_game()
         while not self.gameBorad.isEnd( self.gameBorad.borad ):
             self.gamePlayer.action()
+            # print self.gameBorad.borad
+            # print '-'*30
             self.gameBorad.random_blocks(self.gameBorad.borad)
-            print self.gameBorad.borad
-            print '-'*30
         else:
             print 'Game finish'
             print self.gameBorad.borad
 
 class Borad(object):
     def __init__(self):
-        self.actionTable = [ self.moveUp, self.moveDown, self.moveLeft, self.moveLeft ]
+        self.actionTable = [ self.moveUp, self.moveDown, self.moveLeft, self.moveRight ]
         self.borad = np.zeros((4,4), dtype=np.int32) 
         self.restore_borad_info()
 
@@ -226,13 +227,30 @@ class Node(object):
 class Monte_Carlo_Player(Player):
     def __init__(self, borad):
         self.gameBorad = borad
-        self.root = None 
+        self.root = Node(None, self.gameBorad.borad, None) 
         self.currentNode = None 
+
+    def init_game(self):
+        self.gameBorad.startGame()
+        self.currentNode = None
 
     def action(self):
         if self.currentNode == None:
-            self.root = Node(None, self.gameBorad.borad, None)
-            self.currentNode = copy.deepcopy(self.root)
+            self.currentNode = self.root
+
+        key = tuple( map(tuple, self.gameBorad.borad)) 
+        if key in self.currentNode.childrens:
+            print '='*30
+            print 'meet child'
+            print self.currentNode
+            print 'to'
+            print self.currentNode.childrens[key]
+            print '='*30
+            self.currentNode = self.currentNode.childrens[key]
+        else:
+            newChild = Node(self.currentNode, self.gameBorad.borad, None)
+            self.currentNode.childrens[key] = newChild
+            self.currentNode = newChild
 
         self.currentNode = self.uctSearch(self.currentNode)
 
@@ -245,24 +263,40 @@ class Monte_Carlo_Player(Player):
         self.gameBorad.save_borad_info()
 
     def uctSearch(self, node):
-        for i in range(2):
-            vl = copy.deepcopy(node)
-            vl = self.treePolicy(node)
-            delta = self.defaultPolicy()
-            self.backpropagation(vl, delta)
+        print '-'*50
+        print 'uctSearch'
+        for i in range(5):
+            print '-'*30
+            print 'node id: ',id(node)
+            print node
+            expandNode = self.treePolicy(node)
+            print 'expandNode, id: ', id(expandNode)
+            print expandNode
+            delta = self.defaultPolicy(expandNode)
+            print 'delta: ', delta
+            self.backpropagation(expandNode, node, delta)
+            print '-'*30
 
-        return self.bestChild(vl) 
+        child = self.bestChild(expandNode)
+        print 'child: ', id(child)
+        '''
+            Why reward allways have same amount?
+        '''
+        print 'child.r:{0}, child.v:{1}'.format(child.reward, child.visits)
+        print child
+        print '-'*50
+        return child 
 
     def treePolicy(self, node):
-        v = copy.deepcopy(node)
+        v = node
         while not self.gameBorad.isEnd( v.borad ):
             if v.isExpend():
-                '''
-                    Why not to here?
-                '''
-                print 'v.isExpend'
                 v = self.bestChild(v)
+                print 'treePolicy-- select bestChild'
+                print v
             else:
+                print 'treePolicy-- expand'
+                print v
                 self.expand(v)
                 return v
 
@@ -270,11 +304,13 @@ class Monte_Carlo_Player(Player):
 
     def expand(self, v):
         for nextAction in self.gameBorad.actionTable:
-            self.gameBorad.restore_borad_info()
-            succ_move = nextAction(self.gameBorad.simuBorad)
+            simuBorad = copy.deepcopy(v.borad)
+            succ_move = nextAction(simuBorad)
             if succ_move:
-                n = Node(v, self.gameBorad.simuBorad, nextAction)
+                n = Node(v, simuBorad, nextAction)
                 v.addChildren(n)
+                print 'expand'
+                print n
 
         self.gameBorad.restore_borad_info()
 
@@ -282,39 +318,63 @@ class Monte_Carlo_Player(Player):
         argmax = -1
         argNode = None
         for v in node.childrens.values():
-            score = v.reward/v.visits + 2*math.sqrt( 2*math.log(node.visits) / v.visits)
-            print score
+            score = v.reward/v.visits + 1.414*math.sqrt( 2*math.log(node.visits) / v.visits)
+            # print 'v.r:{0}, .v.v:{1}, n.v:{2}, score:{3} '.format(v.reward, v.visits, node.visits, score)
             if score > argmax:
                 argNode = v
 
         return argNode
 
-    def defaultPolicy(self):
+    def defaultPolicy(self, v):
         reward = 0
+        self.gameBorad.simuBorad = copy.deepcopy(v.borad)
         while not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
             succ_move = False
             self.gameBorad.random_blocks(self.gameBorad.simuBorad)
             nextAction = self.gameBorad.actionTable[ random.randint(0,3) ]
-            succ_move = nextAction(self.gameBorad.simuBorad)
+            # nextAction = self.findBestMovingAct(self.gameBorad.simuBorad)
 
-            if succ_move == True:
-                reward += getFreeScore(self.gameBorad.simuBorad)
+            if nextAction != None:
+                succ_move = nextAction(self.gameBorad.simuBorad)
+                if succ_move == True:
+                    # reward += getFreeScore(self.gameBorad.simuBorad)
+                    reward += 1
         else:
-            pass
-            '''
             print '='*30
-            print 'end simuBorad'
+            print 'end simulate reward: ', reward
             print self.gameBorad.simuBorad
             print '='*30
-            '''
 
+        self.gameBorad.restore_borad_info()
         return reward
 
-    def backpropagation(self, v, delta):
-        while v is not None:
+    '''
+        Why there are children with same borad???
+    '''
+    def backpropagation(self, v, node, delta):
+        print 'backpropagation'
+        while v != node:
+            print id(v), id(v.parent)
+            print v
             v.visits += 1
             v.reward += delta
             v = v.parent
+        print id(v), id(node)
+
+    def findBestMovingAct(self, backupBorad):
+        bestAct = None
+        bestScore = -1
+        simBorad = None
+        for action in self.gameBorad.actionTable:
+            simBorad = copy.deepcopy(backupBorad)
+            succ_move = action(simBorad)
+            if succ_move:
+                score = getFreeScore(simBorad)
+                if score > bestScore:
+                    bestScore = score
+                    bestAct = action
+
+        return bestAct
 
 def getFreeScore(borad):
     maxValue = 0
@@ -326,20 +386,23 @@ def getFreeScore(borad):
                 return score
             if i-1 >= 0 and borad[i][j] != 0 and borad[i][j] == borad[i-1][j]:
                 score += borad[i][j]*2
-            if i-1 >= 0 and borad[i-1][j] == 0:
-                score += 1 
             if j+1 <= 3 and borad[i][j] != 0 and borad[i][j] == borad[i][j+1]:
                 score += borad[i][j]*2
-            if j+1 <= 3 and borad[i][j+1] == 0:
-                score += 1 
             if i+1 <= 3 and borad[i][j] != 0 and borad[i][j] == borad[i+1][j]:
                 score += borad[i][j]*2
-            if i+1 <= 3 and borad[i+1][j] == 0:
-                score += 1 
             if j-1 >= 0 and borad[i][j] != 0 and borad[i][j] == borad[i][j-1]:
                 score += borad[i][j]*2
+            # --------------------------------------------------------------------
+            '''
+            if i-1 >= 0 and borad[i-1][j] == 0:
+                score += 1 
+            if j+1 <= 3 and borad[i][j+1] == 0:
+                score += 1 
             if j-1 >= 0 and borad[i][j-1] == 0:
                 score += 1 
+            if i+1 <= 3 and borad[i+1][j] == 0:
+                score += 1 
+            '''
 
     return score
 
@@ -347,7 +410,12 @@ def unit_test():
     b = Borad()
     m = Monte_Carlo_Player(b)
     g = Game(b, m)
-    g.run()
+    for i in range(3):
+        print '{0} games'.format(i)
+        g.run()
 
 if __name__ == '__main__':
+    start_time = datetime.now()
     unit_test()
+    end_time = datetime.now()
+    print 'Cost time: ', end_time-start_time
