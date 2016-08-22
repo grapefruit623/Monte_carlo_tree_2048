@@ -57,7 +57,6 @@ class Borad(object):
 
     def isEnd(self, temp_borad):
         if 2048 in temp_borad:
-            print 'Player win'
             return True
 
         for i in range(0,4):
@@ -244,8 +243,8 @@ class Monte_Carlo_Player(Player):
         self.currentNode = None 
 
     def init_game(self):
-        # self.gameBorad.startGame()
-        self.gameBorad.start_FakeGame()
+        self.gameBorad.startGame()
+        # self.gameBorad.start_FakeGame()
         self.currentNode = None
 
     def action(self):
@@ -323,16 +322,31 @@ class Monte_Carlo_Player(Player):
 
     def defaultPolicy(self, v):
         reward = 0
-        depth = 20 
-        simulateTimes = 5 
+        depth = -1 
+        simulateTimes = 10 
         for times in range(simulateTimes):
             self.gameBorad.simuBorad = copy.deepcopy(v.borad)
-            for i in range(depth):
-                if not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
+            if depth != -1:
+                for i in range(depth):
+                    if not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
+                        succ_move = False
+                        self.gameBorad.random_blocks(self.gameBorad.simuBorad)
+                        nextAction = self.gameBorad.actionTable[ random.randint(0,3) ]
+
+                        if nextAction != None:
+                            succ_move = nextAction(self.gameBorad.simuBorad)
+                            if succ_move == True:
+                                if 2048 in self.gameBorad.simuBorad:
+                                    reward += 2048
+                                else:
+                                    reward += 1
+                    else:
+                        break
+            else:
+                while not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
                     succ_move = False
                     self.gameBorad.random_blocks(self.gameBorad.simuBorad)
-                    # nextAction = self.gameBorad.actionTable[ random.randint(0,3) ]
-                    nextAction = self.findBestMovingAct(self.gameBorad.simuBorad)
+                    nextAction = self.gameBorad.actionTable[ random.randint(0,3) ]
 
                     if nextAction != None:
                         succ_move = nextAction(self.gameBorad.simuBorad)
@@ -341,13 +355,6 @@ class Monte_Carlo_Player(Player):
                                 reward += 2048
                             else:
                                 reward += 1
-                else:
-                    break
-
-        print '='*30
-        print 'end simulate average reward: ', reward
-        print self.gameBorad.simuBorad
-        print '='*30
 
         self.gameBorad.restore_borad_info()
         return reward / simulateTimes
@@ -364,57 +371,11 @@ class Monte_Carlo_Player(Player):
             v.visits += 1
             v.reward += delta
 
-    def findBestMovingAct(self, backupBorad):
-        bestAct = None
-        bestScore = -1
-        simBorad = None
-        for action in self.gameBorad.actionTable:
-            simBorad = copy.deepcopy(backupBorad)
-            succ_move = action(simBorad)
-            if succ_move:
-                score = getFreeScore(simBorad)
-                if score > bestScore:
-                    bestScore = score
-                    bestAct = action
-
-        return bestAct
-
-def getMaxScore(borad):
-    return borad.max()
-
-def getFreeScore(borad):
-    maxValue = 0
-    score = 0
-    for i in range(0,4):
-        for j in range(0,4):
-            if borad[i][j] == 2048:
-                score = 9999999
-                return score
-            if i-1 >= 0 and borad[i][j] != 0 and borad[i][j] == borad[i-1][j]:
-                score += borad[i][j]*2
-            if j+1 <= 3 and borad[i][j] != 0 and borad[i][j] == borad[i][j+1]:
-                score += borad[i][j]*2
-            if i+1 <= 3 and borad[i][j] != 0 and borad[i][j] == borad[i+1][j]:
-                score += borad[i][j]*2
-            if j-1 >= 0 and borad[i][j] != 0 and borad[i][j] == borad[i][j-1]:
-                score += borad[i][j]*2
-            # --------------------------------------------------------------------
-            if i-1 >= 0 and borad[i-1][j] == 0:
-                score += 1 
-            if j+1 <= 3 and borad[i][j+1] == 0:
-                score += 1 
-            if j-1 >= 0 and borad[i][j-1] == 0:
-                score += 1 
-            if i+1 <= 3 and borad[i+1][j] == 0:
-                score += 1 
-
-    return score
-
 def unit_test():
     b = Borad()
     m = Monte_Carlo_Player(b)
     g = Game(b, m)
-    for i in range(5):
+    for i in range(1):
         print '{0} games'.format(i)
         g.run()
 
