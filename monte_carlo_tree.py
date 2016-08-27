@@ -322,39 +322,23 @@ class Monte_Carlo_Player(Player):
 
     def defaultPolicy(self, v):
         reward = 0
-        depth = -1 
-        simulateTimes = 10 
+        depth = -1 # if depth == -1, will go through to game end.
+        simulateTimes = 3 
         for times in range(simulateTimes):
             self.gameBorad.simuBorad = copy.deepcopy(v.borad)
-            if depth != -1:
-                for i in range(depth):
-                    if not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
-                        succ_move = False
-                        self.gameBorad.random_blocks(self.gameBorad.simuBorad)
-                        nextAction = self.gameBorad.actionTable[ random.randint(0,3) ]
+            while depth != 0 and not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
+                succ_move = False
+                self.gameBorad.random_blocks(self.gameBorad.simuBorad)
+                nextAction = self.gameBorad.actionTable[ random.randint(0,3) ]
 
-                        if nextAction != None:
-                            succ_move = nextAction(self.gameBorad.simuBorad)
-                            if succ_move == True:
-                                if 2048 in self.gameBorad.simuBorad:
-                                    reward += 2048
-                                else:
-                                    reward += 1
-                    else:
-                        break
-            else:
-                while not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
-                    succ_move = False
-                    self.gameBorad.random_blocks(self.gameBorad.simuBorad)
-                    nextAction = self.gameBorad.actionTable[ random.randint(0,3) ]
-
-                    if nextAction != None:
-                        succ_move = nextAction(self.gameBorad.simuBorad)
-                        if succ_move == True:
-                            if 2048 in self.gameBorad.simuBorad:
-                                reward += 2048
-                            else:
-                                reward += 1
+                if nextAction != None:
+                    succ_move = nextAction(self.gameBorad.simuBorad)
+                    if succ_move == True:
+                        if 2048 in self.gameBorad.simuBorad:
+                            reward += 2048
+                        else:
+                            reward += 1
+                        depth -= 1
 
         self.gameBorad.restore_borad_info()
         return reward / simulateTimes
