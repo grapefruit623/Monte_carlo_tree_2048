@@ -321,10 +321,10 @@ class Monte_Carlo_Player(Player):
         return argNode
 
     def defaultPolicy(self, v):
-        reward = 0
-        depth = -1 # if depth == -1, will go through to game end.
-        simulateTimes = 3 
+        reward = 0.0
+        simulateTimes = 10 
         for times in range(simulateTimes):
+            depth = 20 # if depth == -1, will go through to game end.
             self.gameBorad.simuBorad = copy.deepcopy(v.borad)
             while depth != 0 and not self.gameBorad.isEnd( self.gameBorad.simuBorad ):
                 succ_move = False
@@ -334,10 +334,7 @@ class Monte_Carlo_Player(Player):
                 if nextAction != None:
                     succ_move = nextAction(self.gameBorad.simuBorad)
                     if succ_move == True:
-                        if 2048 in self.gameBorad.simuBorad:
-                            reward += 2048
-                        else:
-                            reward += 1
+                        reward += self.getFreeReward(self.gameBorad.simuBorad)
                         depth -= 1
 
         self.gameBorad.restore_borad_info()
@@ -354,6 +351,36 @@ class Monte_Carlo_Player(Player):
         else: # parent node should reflash info
             v.visits += 1
             v.reward += delta
+
+    def getFreeReward(self, borad):
+        score = 0
+        for i in range(4):
+            for j in range(4):
+                if borad[i][j] == 2048:
+                    score = 999999
+                    return score
+                if i-1 >= 0 and borad[i][j] !=0 and borad[i][j] == borad[i-1][j]:
+                    # score += borad[i][j]*2
+                    score += 1
+                if i+1 <= 3 and borad[i][j] !=0 and borad[i][j] == borad[i+1][j]:
+                    # score += borad[i][j]*2
+                    score += 1
+                if j+1 <= 3 and borad[i][j] !=0 and borad[i][j] == borad[i][j+1]:
+                    # score += borad[i][j]*2
+                    score += 1
+                if j-1 >= 0 and borad[i][j] !=0 and borad[i][j] == borad[i][j-1]:
+                    # score += borad[i][j]*2
+                    score += 1
+                #------------------------------------------------------------------
+                if i-1 >= 0 and borad[i-1][j] == 0:
+                    score += 1
+                if i+1 <= 3 and borad[i+1][j] == 0:
+                    score += 1
+                if j+1 <= 3 and borad[i][j+1] == 0:
+                    score += 1
+                if j-1 >= 0 and borad[i][j-1] == 0:
+                    score += 1
+        return score
 
 def unit_test():
     b = Borad()
