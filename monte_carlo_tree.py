@@ -28,9 +28,14 @@ class Borad(object):
         self.restore_borad_info()
 
     def start_FakeGame(self):
+        '''
         self.borad = np.zeros((4,4), dtype=np.int32) 
         self.borad[0][0] = 2;
         self.borad[2][0] = 2;
+        '''
+        # self.borad = np.array( [ [8,2,16,2], [2,1024,1024,8], [8,32,64,2], [0,0,2,0] ] )
+        # self.borad = np.array( [ [4,64,512,0], [64,16,4,2], [2,64,256,0], [128,4,2,32] ] )
+        self.borad = np.array( [ [4,64,512,0], [64,16,4,2], [2,64,256,4], [128,4,2,32] ] )
         self.restore_borad_info()
 
     def startGame(self):
@@ -77,11 +82,12 @@ class Borad(object):
 
     def moveUp(self, temp_borad):
         succ_move = False
+        origin_borad = copy.deepcopy(temp_borad)
         for c in range(0,4):
             rs = 0
             r = rs + 1
             while rs < 4 and r < 4:
-                if temp_borad[r][c] != 0:
+                if temp_borad[rs][c] != 0:
                     if temp_borad[rs][c] == temp_borad[r][c]:
                         temp_borad[r][c] *= 2
                         temp_borad[rs][c] = 0
@@ -100,15 +106,21 @@ class Borad(object):
                     if temp_borad[rz][c] == 0:
                         temp_borad[rz][c] = temp_borad[rz+1][c]
                         temp_borad[rz+1][c] = 0
+
+        if (origin_borad == temp_borad).all():
+            succ_move = False
+
+
         return succ_move
 
     def moveDown(self, temp_borad):
         succ_move = False
+        origin_borad = copy.deepcopy(temp_borad)
         for c in range(0,4):
             rs = 3
             r = rs - 1
             while rs > -1 and r > -1:
-                if temp_borad[r][c] != 0:
+                if temp_borad[rs][c] != 0:
                     if temp_borad[rs][c] == temp_borad[r][c]:
                         temp_borad[r][c] *= 2
                         temp_borad[rs][c] = 0
@@ -128,15 +140,19 @@ class Borad(object):
                         temp_borad[rz][c] = temp_borad[rz-1][c]
                         temp_borad[rz-1][c] = 0
 
+        if (origin_borad == temp_borad).all():
+            succ_move = False
+
         return succ_move
 
     def moveRight(self, temp_borad):
         succ_move = False
+        origin_borad = copy.deepcopy(temp_borad)
         for r in range(0,4):
             cs = 3
             c = cs - 1
             while cs > -1 and c > -1:
-                if temp_borad[r][c] != 0:
+                if temp_borad[r][cs] != 0:
                     if temp_borad[r][cs] == temp_borad[r][c]:
                         temp_borad[r][c] *= 2
                         temp_borad[r][cs] = 0
@@ -156,15 +172,19 @@ class Borad(object):
                         temp_borad[r][cz] = temp_borad[r][cz-1]
                         temp_borad[r][cz-1] = 0
 
+        if (origin_borad == temp_borad).all():
+            succ_move = False
+
         return succ_move
 
     def moveLeft(self, temp_borad):
         succ_move = False
+        origin_borad = copy.deepcopy(temp_borad)
         for r in range(0,4):
             cs = 0
             c = cs + 1
             while cs < 4 and c < 4:
-                if temp_borad[r][c] != 0:
+                if temp_borad[r][cs] != 0:
                     if temp_borad[r][cs] == temp_borad[r][c]:
                         temp_borad[r][c] *= 2
                         temp_borad[r][cs] = 0
@@ -183,6 +203,9 @@ class Borad(object):
                     if temp_borad[r][cz] == 0:
                         temp_borad[r][cz] = temp_borad[r][cz+1]
                         temp_borad[r][cz+1] = 0
+
+        if (origin_borad == temp_borad).all():
+            succ_move = False
 
         return succ_move
 
@@ -323,6 +346,10 @@ class Monte_Carlo_Player(Player):
     def defaultPolicy(self, v):
         reward = 0.0
         simulateTimes = 10 
+        if self.gameBorad.isEnd( v.borad ):
+            reward = self.getFreeReward(v.borad)
+            return reward
+
         for times in range(simulateTimes):
             depth = 20 # if depth == -1, will go through to game end.
             self.gameBorad.simuBorad = copy.deepcopy(v.borad)
@@ -357,7 +384,7 @@ class Monte_Carlo_Player(Player):
         for i in range(4):
             for j in range(4):
                 if borad[i][j] == 2048:
-                    score = 999999
+                    score = 999999 
                     return score
                 if i-1 >= 0 and borad[i][j] !=0 and borad[i][j] == borad[i-1][j]:
                     # score += borad[i][j]*2
