@@ -20,6 +20,10 @@ class Game(object):
         else:
             print 'Game finish'
             print self.gameBorad.borad
+            if 2048 in self.gameBorad.borad:
+                return 1
+            else:
+                return 0
 
 class Borad(object):
     def __init__(self):
@@ -35,6 +39,7 @@ class Borad(object):
         '''
         # self.borad = np.array( [ [8,2,16,2], [2,1024,1024,8], [8,32,64,2], [0,0,2,0] ] )
         # self.borad = np.array( [ [4,64,512,0], [64,16,4,2], [2,64,256,0], [128,4,2,32] ] )
+        # self.borad = np.array( [ [0,8,8,0], [2,4,0,8], [4,2,1024,4], [4,2,1024,2] ] )
         self.borad = np.array( [ [4,64,512,0], [64,16,4,2], [2,64,256,4], [128,4,2,32] ] )
         self.restore_borad_info()
 
@@ -84,6 +89,12 @@ class Borad(object):
         succ_move = False
         origin_borad = copy.deepcopy(temp_borad)
         for c in range(0,4):
+
+            for rs in range(0,4):
+                for rz in range(0,3):
+                    if temp_borad[rz][c] == 0:
+                        temp_borad[rz][c] = temp_borad[rz+1][c]
+                        temp_borad[rz+1][c] = 0
             rs = 0
             r = rs + 1
             while rs < 4 and r < 4:
@@ -93,13 +104,11 @@ class Borad(object):
                         temp_borad[rs][c] = 0
                         rs = r+1
                         r += 2
-                        succ_move = True
                     else:
                         rs = r
                         r += 1
                 else:
                     r += 1
-                    succ_move = True
 
             for rs in range(0,4):
                 for rz in range(0,3):
@@ -109,7 +118,8 @@ class Borad(object):
 
         if (origin_borad == temp_borad).all():
             succ_move = False
-
+        else:
+            succ_move = True
 
         return succ_move
 
@@ -117,6 +127,12 @@ class Borad(object):
         succ_move = False
         origin_borad = copy.deepcopy(temp_borad)
         for c in range(0,4):
+
+            for rs in range(3,0,-1):
+                for rz in range(3,0,-1):
+                    if temp_borad[rz][c] == 0:
+                        temp_borad[rz][c] = temp_borad[rz-1][c]
+                        temp_borad[rz-1][c] = 0
             rs = 3
             r = rs - 1
             while rs > -1 and r > -1:
@@ -126,13 +142,11 @@ class Borad(object):
                         temp_borad[rs][c] = 0
                         rs = r-1
                         r -= 2
-                        succ_move = True
                     else:
                         rs = r
                         r -= 1
                 else:
                     r -= 1
-                    succ_move = True
 
             for rs in range(3,0,-1):
                 for rz in range(3,0,-1):
@@ -142,6 +156,8 @@ class Borad(object):
 
         if (origin_borad == temp_borad).all():
             succ_move = False
+        else:
+            succ_move = True
 
         return succ_move
 
@@ -149,6 +165,12 @@ class Borad(object):
         succ_move = False
         origin_borad = copy.deepcopy(temp_borad)
         for r in range(0,4):
+
+            for cs in range(3,0,-1):
+                for cz in range(3,0,-1):
+                    if temp_borad[r][cz] == 0:
+                        temp_borad[r][cz] = temp_borad[r][cz-1]
+                        temp_borad[r][cz-1] = 0
             cs = 3
             c = cs - 1
             while cs > -1 and c > -1:
@@ -158,13 +180,11 @@ class Borad(object):
                         temp_borad[r][cs] = 0
                         cs = c-1
                         c -= 2
-                        succ_move = True
                     else:
                         cs = c
                         c -= 1
                 else:
                     c -= 1
-                    succ_move = True
 
             for cs in range(3,0,-1):
                 for cz in range(3,0,-1):
@@ -174,6 +194,8 @@ class Borad(object):
 
         if (origin_borad == temp_borad).all():
             succ_move = False
+        else:
+            succ_move = True
 
         return succ_move
 
@@ -181,6 +203,12 @@ class Borad(object):
         succ_move = False
         origin_borad = copy.deepcopy(temp_borad)
         for r in range(0,4):
+
+            for cs in range(0,4):
+                for cz in range(0,3):
+                    if temp_borad[r][cz] == 0:
+                        temp_borad[r][cz] = temp_borad[r][cz+1]
+                        temp_borad[r][cz+1] = 0
             cs = 0
             c = cs + 1
             while cs < 4 and c < 4:
@@ -190,13 +218,11 @@ class Borad(object):
                         temp_borad[r][cs] = 0
                         cs = c+1
                         c += 2
-                        succ_move = True
                     else:
                         cs = c
                         c += 1
                 else:
                     c += 1
-                    succ_move = True
 
             for cs in range(0,4):
                 for cz in range(0,3):
@@ -206,6 +232,8 @@ class Borad(object):
 
         if (origin_borad == temp_borad).all():
             succ_move = False
+        else:
+            succ_move = True
 
         return succ_move
 
@@ -280,6 +308,7 @@ class Monte_Carlo_Player(Player):
             print 'meet child'
             print self.currentNode
             print 'to'
+            print self.currentNode.childrens[key].action
             print self.currentNode.childrens[key]
             print '='*30
             self.currentNode = self.currentNode.childrens[key]
@@ -413,9 +442,22 @@ def unit_test():
     b = Borad()
     m = Monte_Carlo_Player(b)
     g = Game(b, m)
-    for i in range(1):
+    totals = 1 
+    wins = 0.0
+    for i in range(totals):
         print '{0} games'.format(i)
-        g.run()
+        wins += g.run()
+    print 'Win rate: ', wins/totals
+
+def moving_test():
+    b = Borad()
+    m = Monte_Carlo_Player(b)
+    g = Game(b, m)
+    g.gamePlayer.init_game()
+    print g.gameBorad.borad
+    print '-'*5
+    g.gameBorad.moveRight(g.gameBorad.borad)
+    print g.gameBorad.borad
 
 if __name__ == '__main__':
     cProfile.runctx('unit_test()', globals(), locals())
