@@ -4,22 +4,49 @@ import copy
 import random
 import numpy as np
 import cProfile
+import os
+import time
+
+class Logger(object):
+    def __init__(self):
+        pass
+
+    def printBoradWithColor(self, rand_loc, borad):
+        for row in range(4):
+            print ('-'*39)
+            for col in range(4):
+                if row == rand_loc[0] and col == rand_loc[1]:
+                    print ('\x1b[0;31;40m{0:>5d}{1:>4s}\x1b[0m'.format(borad[row][col], '|')),
+                else:
+                    print ('{0:>5d}{1:>4s}'.format(borad[row][col], '|')),
+            print ''
+        print ('-'*39)
+
+    def printBorad(self, action, borad):
+        print (action)
+        for row in borad:
+            print ('-'*39)
+            for col in row:
+                print ('{0:>5d}{1:>4s}'.format(col, '|')),
+            print ''
+        print ('-'*39)
 
 class Game(object):
     def __init__(self, borad=None, player=None):
         self.gamePlayer = player
         self.gameBorad = borad
+        self.logger = Logger()
 
     def run(self):
         self.gamePlayer.init_game()
         while not self.gameBorad.isEnd( self.gameBorad.borad ):
-            self.gamePlayer.action()
-            self.gameBorad.random_blocks(self.gameBorad.borad)
-            print self.gameBorad.borad
-            print '-'*30
+            actionName = self.gamePlayer.action()
+            self.logger.printBorad(actionName, self.gameBorad.borad)
+            loc = self.gameBorad.random_blocks(self.gameBorad.borad)
+            self.logger.printBoradWithColor(loc, self.gameBorad.borad)
         else:
-            print 'Game finish'
-            print self.gameBorad.borad
+            print ('Game finish')
+            print (self.gameBorad.borad)
             if 2048 in self.gameBorad.borad:
                 return 1
             else:
@@ -64,6 +91,9 @@ class Borad(object):
                 if temp_borad[r][c] == 0:
                     temp_borad[r][c] = 2
                     break
+        else:
+            return 'None'
+        return (r,c)
 
     def isEnd(self, temp_borad):
         if 2048 in temp_borad:
@@ -240,7 +270,6 @@ class Borad(object):
 class Player(object):
     def __init__(self, CurrentBorad):
         self.gameBorad = borad
-        print 'Player init'
 
     def random_action(self):
         succ_move = False
@@ -253,7 +282,6 @@ class Player(object):
         self.gameBorad.save_borad_info()
 
     def action(self):
-        print 'Player run'
         self.random_action()
 
 # --------------------------------------------------------------------------
@@ -304,13 +332,6 @@ class Monte_Carlo_Player(Player):
 
         key = tuple( map(tuple, self.gameBorad.borad)) 
         if key in self.currentNode.childrens:
-            print '='*30
-            print 'meet child'
-            print self.currentNode
-            print 'to'
-            print self.currentNode.childrens[key].action
-            print self.currentNode.childrens[key]
-            print '='*30
             self.currentNode = self.currentNode.childrens[key]
         else:
             newChild = Node(self.currentNode, self.gameBorad.borad, None)
@@ -318,15 +339,11 @@ class Monte_Carlo_Player(Player):
             self.currentNode = newChild
 
         self.currentNode = self.uctSearch(self.currentNode)
-
         self.gameBorad.restore_borad_info()
-
-        nextAction = self.currentNode.action
-        print nextAction
-        nextAction(self.gameBorad.simuBorad)
-        nextAction(self.gameBorad.borad)
-
+        self.currentNode.action(self.gameBorad.simuBorad)
+        self.currentNode.action(self.gameBorad.borad)
         self.gameBorad.save_borad_info()
+        return self.currentNode.action.__name__
 
     def uctSearch(self, node):
         for i in range(5):
@@ -440,24 +457,24 @@ class Monte_Carlo_Player(Player):
 
 def unit_test():
     b = Borad()
-    m = Monte_Carlo_Player(b)
-    g = Game(b, m)
+    m = Monte_Carlo_Player(borad=b)
+    g = Game(borad=b, player=m)
     totals = 1 
     wins = 0.0
     for i in range(totals):
-        print '{0} games'.format(i)
+        print ('{0} games'.format(i))
         wins += g.run()
-    print 'Win rate: ', wins/totals
+    print ('Win rate: ', wins/totals)
 
 def moving_test():
     b = Borad()
-    m = Monte_Carlo_Player(b)
+    m = Monte_Carlo_Player(borad=b)
     g = Game(b, m)
     g.gamePlayer.init_game()
-    print g.gameBorad.borad
-    print '-'*5
+    print (g.gameBorad.borad)
+    print ('-'*5)
     g.gameBorad.moveRight(g.gameBorad.borad)
-    print g.gameBorad.borad
+    print (g.gameBorad.borad)
 
 if __name__ == '__main__':
     cProfile.runctx('unit_test()', globals(), locals())
