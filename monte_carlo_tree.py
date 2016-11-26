@@ -31,16 +31,27 @@ class Logger(object):
             print ''
         print ('-'*39)
 
+    '''
+        Should I modifies this function to async func?
+    '''
+    def recordBorad_and_Action(self, borad, actionName):
+        with open('borad_record.txt', 'a') as f:
+            f.write('{0}:{1}\n'.format(' '.join(str(x) for x in borad.flatten()), actionName))
+
 class Game(object):
     def __init__(self, borad=None, player=None):
         self.gamePlayer = player
         self.gameBorad = borad
         self.logger = Logger()
+        self.recordBorad = None
 
     def run(self):
         self.gamePlayer.init_game()
         while not self.gameBorad.isEnd( self.gameBorad.borad ):
+            self.logger.printBorad('node', self.gameBorad.borad)
+            self.recordBorad = copy.deepcopy(self.gameBorad.borad)
             actionName = self.gamePlayer.action()
+            self.logger.recordBorad_and_Action(self.recordBorad, actionName)
             self.logger.printBorad(actionName, self.gameBorad.borad)
             loc = self.gameBorad.random_blocks(self.gameBorad.borad)
             self.logger.printBoradWithColor(loc, self.gameBorad.borad)
@@ -338,10 +349,12 @@ class Monte_Carlo_Player(Player):
             self.currentNode.childrens[key] = newChild
             self.currentNode = newChild
 
-        self.currentNode = self.uctSearch(self.currentNode)
+        bestChild = self.uctSearch(self.currentNode)
+        self.currentNode.action = bestChild.action # Record current borad with chosen action
+        self.currentNode = bestChild
         self.gameBorad.restore_borad_info()
-        self.currentNode.action(self.gameBorad.simuBorad)
-        self.currentNode.action(self.gameBorad.borad)
+        bestChild.action(self.gameBorad.simuBorad)
+        bestChild.action(self.gameBorad.borad)
         self.gameBorad.save_borad_info()
         return self.currentNode.action.__name__
 
@@ -352,7 +365,7 @@ class Monte_Carlo_Player(Player):
             self.backpropagation(expandNode, node, delta)
 
         child = self.bestChild(node)
-        return child 
+        return child
 
     def treePolicy(self, node):
         v = node
@@ -386,7 +399,6 @@ class Monte_Carlo_Player(Player):
             if score > argmax:
                 argmax = score
                 argNode = v
-
         return argNode
 
     def defaultPolicy(self, v):
@@ -477,4 +489,5 @@ def moving_test():
     print (g.gameBorad.borad)
 
 if __name__ == '__main__':
-    cProfile.runctx('unit_test()', globals(), locals())
+    # cProfile.runctx('unit_test()', globals(), locals())
+    unit_test()
