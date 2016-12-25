@@ -151,21 +151,23 @@ class Monte_Carlo_Player(Player):
         score = 0
         for i in range(4):
             for j in range(4):
+                '''
                 if borad[i][j] == 2048:
                     score = 999999 
                     return score
+                '''
                 if i-1 >= 0 and borad[i][j] !=0 and borad[i][j] == borad[i-1][j]:
-                    # score += borad[i][j]*2
-                    score += 1
+                    score += borad[i][j]*2
+                    # score += 1
                 if i+1 <= 3 and borad[i][j] !=0 and borad[i][j] == borad[i+1][j]:
-                    # score += borad[i][j]*2
-                    score += 1
+                    score += borad[i][j]*2
+                    # score += 1
                 if j+1 <= 3 and borad[i][j] !=0 and borad[i][j] == borad[i][j+1]:
-                    # score += borad[i][j]*2
-                    score += 1
+                    score += borad[i][j]*2
+                    # score += 1
                 if j-1 >= 0 and borad[i][j] !=0 and borad[i][j] == borad[i][j-1]:
-                    # score += borad[i][j]*2
-                    score += 1
+                    score += borad[i][j]*2
+                    # score += 1
                 #------------------------------------------------------------------
                 if i-1 >= 0 and borad[i-1][j] == 0:
                     score += 1

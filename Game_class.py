@@ -39,7 +39,7 @@ def play2048():
     b = Borad()
     m = Monte_Carlo_Player(borad=b)
     g = Game(borad=b, player=m)
-    totals = 1 
+    totals = 2 
     wins = 0.0
     for i in range(totals):
         print ('{0} games'.format(i))
@@ -58,4 +58,5 @@ def unit_test():
 
 if __name__ == '__main__':
     # cProfile.runctx('unit_test()', globals(), locals())
+    # cProfile.runctx('play2048()', globals(), locals())
     play2048()
