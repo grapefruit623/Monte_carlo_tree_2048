@@ -9,10 +9,10 @@ class Logger(object):
             print ('-'*39)
             for col in range(4):
                 if row == rand_loc[0] and col == rand_loc[1]:
-                    print ('\x1b[0;31;40m{0:>5d}{1:>4s}\x1b[0m'.format(borad[row][col], '|')),
+                    print ('\x1b[0;31;40m{0:>5d}{1:>4s}\x1b[0m'.format(borad[row][col], '|'), end=""),
                 else:
-                    print ('{0:>5d}{1:>4s}'.format(borad[row][col], '|')),
-            print ''
+                    print ('{0:>5d}{1:>4s}'.format(borad[row][col], '|'), end="")
+            print ('')
         print ('-'*39)
 
     def printBorad(self, action, borad):
@@ -20,8 +20,8 @@ class Logger(object):
         for row in borad:
             print ('-'*39)
             for col in row:
-                print ('{0:>5d}{1:>4s}'.format(col, '|')),
-            print ''
+                print ('{0:>5d}{1:>4s}'.format(col, '|'), end="")
+            print ('')
         print ('-'*39)
 
     '''
