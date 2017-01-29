@@ -3,48 +3,54 @@ import cProfile
 import os
 import time
 import copy
+import threading
 
 from baseClass.Borad_class import Borad
 from baseClass.Logger_class import Logger
 from baseClass.Player_class import Player
 
 from monte_carlo_tree import Monte_Carlo_Player
+from Gui import GuiThread
 
-class Game(object):
+class Game(threading.Thread):
     def __init__(self, borad=None, player=None):
+        super().__init__()
         self.gamePlayer = player
         self.gameBorad = borad
         self.logger = Logger()
         self.recordBorad = None
+        self.dataQueue = None
 
     def run(self):
         self.gamePlayer.init_game()
         while not self.gameBorad.isEnd( self.gameBorad.borad ):
-            self.logger.printBorad('node', self.gameBorad.borad)
+            # self.logger.printBorad('node', self.gameBorad.borad)
+            # self.dataQueue.put({'board':self.gameBorad.borad, 'action':'cur'})
+            # time.sleep(0.1)            
             self.recordBorad = copy.deepcopy(self.gameBorad.borad)
             actionName = self.gamePlayer.action()
             self.logger.recordBorad_and_Action(self.recordBorad, actionName)
             self.logger.printBorad(actionName, self.gameBorad.borad)
+            self.dataQueue.put({'board':self.gameBorad.borad, 'action':actionName})
+            time.sleep(0.1)            
             loc = self.gameBorad.random_blocks(self.gameBorad.borad)
             self.logger.printBoradWithColor(loc, self.gameBorad.borad)
+            self.dataQueue.put({'board':self.gameBorad.borad, 'action':'random'})
+            time.sleep(0.1)            
         else:
             print ('Game finish')
             print (self.gameBorad.borad)
             if 2048 in self.gameBorad.borad:
-                return 1
+                print ('Winner!')
             else:
-                return 0
+                print ('Loser..')
 
 def play2048():
     b = Borad()
     m = Monte_Carlo_Player(borad=b)
     g = Game(borad=b, player=m)
-    totals = 2 
-    wins = 0.0
-    for i in range(totals):
-        print ('{0} games'.format(i))
-        wins += g.run()
-    print ('Win rate: ', wins/totals)
+    gui = GuiThread(gameCtrl=g)
+    gui.start()
 
 def unit_test():
     b = Borad()
